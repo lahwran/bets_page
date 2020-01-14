@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Bid Calculator</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body, html {
+        width: 100%;
+        height: 100%;
+      }
+      .mui-tabs__bar {
+        margin-bottom: 32px !important;
+      }
+    </style>
+    <link href="//cdn.muicss.com/mui-0.9.39/css/mui.min.css" rel="stylesheet" type="text/css" />
+
+  </head>
+  <body>
+
+    <div id="container" class="mui-container"></div>
+
+    <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js"></script>
+    <script type="text/babel">
+      class App extends React.Component {
+        constructor(props) {
+          super(props);
+          this.state = {
+            show_as_jst: localStorage.show_as_jst !== "no",
+            value: "",
+            currency_prefix: "$",
+            currency_postfix: "",
+            currency: "dollars",
+            amount: 10
+          }
+        }
+        componentDidUpdate() {
+          localStorage.show_as_jst = this.state.show_as_jst ? "yes" : "no"
+        }
+        update(value) {
+          //var extracted = /^(.*),? *([0-9]{1,2} *bid *(?:(?=[^0-9])|$)|[] at *[0-9]+|bid *) *(?:that *)?(.*)$/;
+          var extract = /^(.*?),? *((?:[0-9]{1,2} *bid *(?:(?=[^0-9])|$)|at *[0-9]{1,2} *|bid *[0-9]{1,2} *){1,2})(?:that *)?(.*)$/;
+          var bid = null;
+          var ask = null;
+          var proposition = null;
+          var result = value.match(extract);
+          if (result !== null) {
+            var extract_2 = /(?:([0-9]{1,2}) *bid *(?:(?=[^0-9])|$)|at *([0-9]{1,2}) *|bid *([0-9]{1,2}) *)/g;
+            var matches = [];
+            
+            var bidask = result[2];
+            var match;
+            while (true) {
+              match = extract_2.exec(bidask);
+              if (!match) {
+                break;
+              }
+              if (match[1] !== undefined) {
+                bid = parseFloat(match[1])/100.0;
+              }
+              if (match[3] !== undefined) {
+                bid = parseFloat(match[3])/100.0;
+              }
+              if (match[2] !== undefined) {
+                ask = parseFloat(match[2])/100.0;
+              }
+            }
+            if (result[1].trim() && result[3].trim()) {
+              proposition = `${result[1].trim()} ... ${result[3].trim()}`;
+            } else {
+              proposition = `${result[1].trim()}${result[3].trim()}`;
+            }
+          }
+          this.setState({value, bid, ask, proposition});
+        }
+        currency(x) {
+          if (x === undefined || x === null) {
+            return null;
+          }
+          x = parseFloat(x);
+          return `${this.state.currency_prefix || ""}${x.toFixed(2)}${this.state.currency_postfix || ""}`;
+        }
+        percent(x) {
+          if (x === undefined || x === null) {
+            return null;
+          }
+          x = parseFloat(x);
+          return (x * 100).toFixed(0);
+        }
+        render() {
+        
+          return <div>
+            <div className="mui-textfield mui-textfield--float-label">
+              <textarea value={this.state.value} onChange={event => this.update(event.target.value)} />
+              <label>Their message</label>
+            </div>
+
+            {!this.state.proposition && <div>
+              Enter their proposition and bid/ask, in the form "the sky is blue, 98 bid at 99"
+            </div>}
+
+            {this.state.proposition && <div>
+              <ul className="mui-tabs__bar">
+                <li className={ this.state.show_as_jst ? "mui--is-active" : ""}><a onClick={() => this.setState({show_as_jst: true})}>Bid style</a></li>
+                <li className={!this.state.show_as_jst ? "mui--is-active" : ""}><a onClick={() => this.setState({show_as_jst: false})}>Betting style</a></li>
+              </ul>
+              <div className="mui-panel">
+                <div className={ this.state.show_as_jst ? "mui-tabs__pane mui--is-active" : "mui-tabs__pane"}>
+                  <h3> {this.currency(this.state.amount)} if {this.state.proposition}</h3>
+                  <h4>
+                    {this.state.bid !== null && <span>{this.percent(this.state.bid)}% &lt;</span>} Their probability {this.state.ask !== null && <span>&lt; {this.percent(this.state.ask)}%</span>}
+                  </h4>
+                  {this.state.bid !== null && <p>
+                    <hr/>
+                    If you believe the true probability is less than {this.percent(this.state.bid)}, then they're bidding too high for this share, and you should sell it.
+                    <h3> You can accept their bid by saying "sold". </h3>
+
+                    Once the proposition resolves, they'll owe you <strong>{this.currency(this.state.amount*this.state.bid)} regardless</strong>, and if the proposition was true, you'll owe them {this.currency(this.state.amount)} (which adds up to <strong>{this.currency(this.state.amount*(1-this.state.bid))}</strong>).
+
+                  </p>}
+                  {this.state.ask !== null && <p>
+                    <hr/>
+                    If you believe the true probability is greater than {this.percent(this.state.ask)}, then they're selling too low for this share, and you should buy it.
+                    <h3> You can accept their ask by saying "taken". </h3>
+
+                    Once the proposition resolves, you'll owe them <strong>{this.currency(this.state.amount*this.state.ask)} regardless</strong>, and if the proposition was true, they'll owe you {this.currency(this.state.amount)} (which adds up to <strong>{this.currency(this.state.amount*(1-this.state.ask))}</strong>).
+
+                  </p>}
+                </div>
+                <div className={!this.state.show_as_jst ? "mui-tabs__pane mui--is-active" : "mui-tabs__pane"}>
+                  <h4>
+                    {this.state.bid !== null && <span>{this.percent(this.state.bid)}% &lt;</span>} Their probability {this.state.ask !== null && <span>&lt; {this.percent(this.state.ask)}%</span>}
+                  </h4>
+                  {this.state.bid !== null && <p>
+                    <hr/>
+                    <h3> They'll take the yes side of the bet at {this.percent(this.state.bid)} yes to {this.percent(1-this.state.bid)} no odds: </h3>
+                    <h4> Their {this.currency(this.state.amount*this.state.bid)} </h4>
+                    that <strong>{this.state.proposition}</strong> is true
+                    <h4> to your {this.currency(this.state.amount*(1-this.state.bid))}</h4>
+                    that it's not true.
+
+                    You can accept this bet by spelling out which side you'll take. It's probably faster to say "sold" - see the other tab.
+                  </p>}
+                  {this.state.ask !== null && <p>
+                    <hr/>
+                    <h3> They'll take the no side of the bet at {this.percent(this.state.ask)} yes to {this.percent(1-this.state.ask)} no odds: </h3>
+                    <h4> Your {this.currency(this.state.amount*this.state.ask)} </h4>
+                    that <strong>{this.state.proposition}</strong> is true
+                    <h4> to their {this.currency(this.state.amount*(1-this.state.ask))}</h4>
+                    that it's not true.
+
+                    You can accept this bet by spelling out which side you'll take. It's probably faster to say "taken" - see the other tab.
+
+                  </p>}
+
+                </div>
+              </div>
+            </div>
+            }
+          </div>;
+        }
+      }
+      ReactDOM.render(
+        <App/>,
+        document.getElementById('container')
+      );
+    </script>
+
+  </body>
+</html>
