@@ -125,6 +125,67 @@ const EXAMPLES = [
 ]
 const Weak = ({children}) => <span style={{color: '#aaaaaa'}} children={children}/>
 
+// this function via https://stackoverflow.com/a/37311182/1102705
+function copyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+
+  //
+  // *** This styling is an extra step which is likely not required. ***
+  //
+  // Why is it here? To ensure:
+  // 1. the element is able to have focus and selection.
+  // 2. if element was to flash render it has minimal visual impact.
+  // 3. less flakyness with selection and copying which **might** occur if
+  //    the textarea element is not visible.
+  //
+  // The likelihood is the element won't even render, not even a flash,
+  // so some of these are just precautions. However in IE the element
+  // is visible whilst the popup box asking the user for permission for
+  // the web page to copy to the clipboard.
+  //
+
+  // Place in top-left corner of screen regardless of scroll position.
+  textArea.style.position = 'fixed';
+  textArea.style.top = 0;
+  textArea.style.left = 0;
+
+  // Ensure it has a small width and height. Setting to 1px / 1em
+  // doesn't work as this gives a negative w/h on some browsers.
+  textArea.style.width = '2em';
+  textArea.style.height = '2em';
+
+  // We don't need padding, reducing the size if it does flash render.
+  textArea.style.padding = 0;
+
+  // Clean up any borders.
+  textArea.style.border = 'none';
+  textArea.style.outline = 'none';
+  textArea.style.boxShadow = 'none';
+
+  // Avoid flash of white box if rendered for any reason.
+  textArea.style.background = 'transparent';
+
+
+  textArea.value = text;
+
+  document.body.appendChild(textArea);
+
+  textArea.select();
+
+  let msg;
+  try {
+    var successful = document.execCommand('copy');
+    msg = successful ? 'success' : 'error';
+    console.log('Copying text command was ' + msg);
+  } catch (err) {
+    msg = "error";
+    console.log('Oops, unable to copy');
+  }
+
+  document.body.removeChild(textArea);
+  return msg;
+}
+
 const App = () => {
   const [show_as_jst, setShowAsJST] = useQueryString({name: "show_as_jst", type: "boolean", defaultValue: localStorage.show_as_jst !== "no"})
   const [isCounterer, setIsCounterer] = useState(localStorage.isCounterer !== "no")
@@ -133,6 +194,7 @@ const App = () => {
   const [currency_postfix, setCurrencyPostfix] = useQueryString({name: "currency_postfix", type: "string", defaultValue: " points"});
   const [amount, setAmount] = useState(10);
   const [counterer, proposer] = isCounterer ? ["you", "they"] : ["they", "you"];
+  const [copyResult, setCopyResult] = useState("");
 
   localStorage.show_as_jst = show_as_jst ? "yes" : "no"
   localStorage.isCounterer = isCounterer ? "yes" : "no"
@@ -157,6 +219,11 @@ const App = () => {
     x = parseFloat(x);
     return (x * 100).toFixed(0);
   }
+  const copyLink = useCallback(() => {
+    const result = copyTextToClipboard(location.href);
+    setCopyResult(result);
+    setTimeout(() => setCopyResult(""), 4000);
+  })
   
   return <div>
     <h1> JST-style betting calculator </h1>
@@ -182,6 +249,9 @@ const App = () => {
     <div className="mui-textfield mui-textfield--float-label">
       <textarea value={value} onChange={update} />
       <label>{proposer === "you" ? "your" : "their"} message, in JST format, proposing the bet (out of {formatCurrency(amount)})</label>
+    </div>
+    <div>
+      <a href="#" onClick={copyLink}>Copy link to this bet summary</a> {copyResult}
     </div>
 
     {proposition && <div>
