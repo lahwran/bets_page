@@ -191,10 +191,10 @@ const App = () => {
       </ul>
       <div className="mui-panel">
         <div className={ show_as_jst ? "mui-tabs__pane mui--is-active" : "mui-tabs__pane"}>
-          <h3> You're trading on a proposal worth {formatCurrency(amount)} if {proposition} resolves true,</h3>
-          <span>and according to the bet {proposer}'re proposing,</span>
+          <h3> {proposer === "you" ? "You're making" : "You're trading on"} a proposal worth {formatCurrency(amount)} if "{proposition}" resolves true,</h3>
+          <span>and according to the bet{ask !== null && bid !== null ? "s" : ""} {proposer}'re proposing,</span>
           <h4>
-            {bid !== null && <span>{percent(bid)}% <Weak>is less than</Weak></span>} {proposer === "you" ? "your" : "their"} estimate of its probability{ask !== null && <span><Weak>{bid !== null && ", which "} is less than</Weak> {percent(ask)}%</span>}.
+            {bid !== null && <span>{percent(bid)}% <Weak>({formatCurrency(amount*bid)}) is the lower bound on</Weak></span>} {proposer === "you" ? "your" : "their"} estimate of its probability{ask !== null && <span><Weak>{bid !== null && ", "} which has a higher bound of </Weak> {percent(ask)}% <Weak>({formatCurrency(amount*ask)})</Weak></span>}.
           </h4>
           {bid !== null && <p>
             <hr/>
@@ -214,14 +214,14 @@ const App = () => {
           </p>}
         </div>
         <div className={!show_as_jst ? "mui-tabs__pane mui--is-active" : "mui-tabs__pane"}>
-          <h3> {counterer}'re considering a bet worth {formatCurrency(amount)} if {proposition} resolves true,</h3>
-          <span>and according to the bet {proposer}'re proposing,</span>
+          <h3> {proposer === "you" ? "You're offering" : "You're considering"} {ask !== null && bid !== null ? "two bets" : "a bet"} worth {formatCurrency(amount)} if "{proposition}" resolves true,</h3>
+          <span>and according to the bet{ask !== null && bid !== null ? "s" : ""} {proposer}'re proposing,</span>
           <h4>
-            {bid !== null && <span>{percent(bid)}% <Weak>is less than</Weak></span>} {proposer === "you" ? "your" : "their"} estimate of its probability{ask !== null && <span><Weak>{bid !== null && ", which "} is less than</Weak> {percent(ask)}%</span>}.
+            {bid !== null && <span>{percent(bid)}% <Weak>({formatCurrency(amount*bid)}) is the lower bound on</Weak></span>} {proposer === "you" ? "your" : "their"} estimate of its probability{ask !== null && <span><Weak>{bid !== null && ", "} which has a higher bound of </Weak> {percent(ask)}% <Weak>({formatCurrency(amount*ask)})</Weak></span>}.
           </h4>
           {bid !== null && <div><p>
             <hr/>
-            <h3> {proposer}'ll take the yes side of the bet at {percent(bid)} yes to {percent(1-bid)} no odds: </h3>
+            <h3> {proposer}'ll take the yes side of the bet at {percent(bid)}% YES to {percent(1-bid)}% NO odds: </h3>
             <h4> {proposer === "you" ? "your" : "their"} {formatCurrency(amount*bid)} </h4>
             that the claim <strong>"{proposition}"</strong> is true or resolves to being true
             <h4> to {counterer === "you" ? "your" : "their"} {formatCurrency(amount*(1-bid))}</h4>
@@ -233,7 +233,7 @@ const App = () => {
           </div>}
           {(ask !== null && bid !== null && <OrRow/>)}
           {ask !== null && <div><p>
-            <h3> {proposer}'ll take the no side of the bet at {percent(ask)} yes to {percent(1-ask)} no odds: </h3>
+            <h3> {proposer}'ll take the no side of the bet at {percent(ask)}% YES to {percent(1-ask)}% NO odds: </h3>
             <h4> Your {formatCurrency(amount*ask)} </h4>
             that the claim <strong>"{proposition}"</strong> is true or resolves to being true
             <h4> to their {formatCurrency(amount*(1-ask))}</h4>
